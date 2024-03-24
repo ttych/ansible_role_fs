@@ -1,0 +1,12 @@
+---
+
+- block:
+    - include_tasks: context.yml
+
+    - include_tasks: all_fs.yml
+
+  when: want_fs
+
+- name: set has_fs
+  set_fact:
+    has_fs: "{{ want_fs }}"

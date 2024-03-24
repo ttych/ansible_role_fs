@@ -1,0 +1,48 @@
+---
+
+- block:
+
+    - block:
+        - name: stat current dataset
+          shell: zfs list -H "{{ fs.mountpoint }}" | awk '{print $1}'
+          register: t_fs_current_dataset
+          changed_when: no
+
+        - name: set target dataset
+          set_fact:
+            fs_target_dataset: "{{ t_fs_current_dataset.stdout }}"
+          when:
+            - t_fs_current_dataset.rc == 0
+            - t_fs_current_dataset.stdout != ""
+            - not (fs.strict | default(True))
+
+      when:
+        - fs.mountpoint | default(false)
+        - fs.mountpoint != ''
+
+    - name: set target dataset
+      set_fact:
+        fs_target_dataset: "{{ fs.parent_dataset }}/{{ fs.name }}"
+      when:
+        - fs_target_dataset is not defined or fs_target_dataset == ""
+
+    - name: "set {{ fs.name }} dataset"
+      zfs:
+        name: "{{ fs_target_dataset }}"
+        state: present
+        extra_zfs_properties: "{{ fs_zfs_dataset_properties | combine(fs.properties | default({})) }}"
+
+  when: fs.type == 'zfs'
+
+
+- name: "set {{ fs.mountpoint }} permissions"
+  file:
+    path: "{{ fs.mountpoint }}"
+    owner: "{{ fs.owner }}"
+    group: "{{ fs.group }}"
+    mode: "{{ fs.mode | default(fs_default_mode) }}"
+    #recurse: yes
+    #follow: no
+  when:
+    - fs.mountpoint | default(false)
+    - fs.mountpoint != ''

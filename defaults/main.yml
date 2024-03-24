@@ -1,0 +1,52 @@
+---
+
+want_fs: yes
+
+fs_zfs: yes
+fs_zfs_dataset_properties:
+  setuid: off
+  compression: "lz4"
+  sharenfs: off
+  sharesmb: off
+  atime: off
+  relatime: off
+
+fs_default_mode: '0755'
+fs_zfs_default_base_dataset: zdata
+
+
+fs_zfs_home_parent_dataset: "{{ fs_zfs_default_base_dataset }}"
+fs_zfs_service_parent_dataset: "{{ fs_zfs_default_base_dataset }}"
+fs_zfs_data_parent_dataset: "{{ fs_zfs_default_base_dataset }}"
+
+fs_base:
+  - type: zfs
+    name: home
+    parent_dataset: "{{ fs_zfs_home_parent_dataset }}"
+    mountpoint: /home
+    mode: '0755'
+    owner: root
+    group: "{{ root_group }}"
+    strict: no
+  - type: zfs
+    name: service
+    parent_dataset: "{{ fs_zfs_service_parent_dataset }}"
+    mountpoint: /service
+    mode: '0751'
+    owner: root
+    group: "{{ root_group }}"
+    strict: no
+  - type: zfs
+    name: data
+    parent_dataset: "{{ fs_zfs_data_parent_dataset }}"
+    mountpoint: /data
+    mode: '0755'
+    owner: root
+    group: "{{ root_group }}"
+    strict: no
+
+fs_extra: []
+
+
+
+root_group: 0

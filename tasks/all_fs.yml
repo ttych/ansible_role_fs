@@ -1,0 +1,8 @@
+---
+
+- include_tasks: fs.yml
+  vars:
+    fs: "{{ fs_i }}"
+  loop: "{{ fs_base + fs_extra }}"
+  loop_control:
+    loop_var: fs_i
