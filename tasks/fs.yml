@@ -1,14 +1,17 @@
 ---
 
 - block:
+    - name: "reset fs_target_dataset"
+      set_fact:
+        fs_target_dataset: null
 
     - block:
-        - name: stat current dataset
+        - name: "stat {{ fs.name }} current dataset"
           shell: zfs list -H "{{ fs.mountpoint }}" | awk '{print $1}'
           register: t_fs_current_dataset
           changed_when: no
 
-        - name: set target dataset
+        - name: "set {{ fs.name }} target dataset from current"
           set_fact:
             fs_target_dataset: "{{ t_fs_current_dataset.stdout }}"
           when:
@@ -20,17 +23,20 @@
         - fs.mountpoint | default(false)
         - fs.mountpoint != ''
 
-    - name: set target dataset
+    - name: "set {{ fs.name }} target dataset if no current"
       set_fact:
         fs_target_dataset: "{{ fs.parent_dataset }}/{{ fs.name }}"
       when:
-        - fs_target_dataset is not defined or fs_target_dataset == ""
+        - fs_target_dataset is not defined or not fs_target_dataset
 
-    - name: "set {{ fs.name }} dataset"
+    - debug:
+        msg: "{{ fs_target_dataset }}"
+
+    - name: "have {{ fs.name }} dataset"
       zfs:
         name: "{{ fs_target_dataset }}"
         state: present
-        extra_zfs_properties: "{{ fs_zfs_dataset_properties | combine(fs.properties | default({})) }}"
+        extra_zfs_properties: "{{ fs_zfs_dataset_properties | combine(fs.properties | default({})) | combine({ 'mountpoint': fs.mountpoint | default('none') }) }}"
 
   when: fs.type == 'zfs'
 
