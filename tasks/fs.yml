@@ -6,6 +6,7 @@
         fs_target_dataset: null
 
     - block:
+
         - name: "stat {{ fs.name }} current dataset"
           shell: zfs list -H "{{ fs.mountpoint }}" | awk '{print $1}'
           register: t_fs_current_dataset
@@ -17,29 +18,45 @@
           when:
             - t_fs_current_dataset.rc == 0
             - t_fs_current_dataset.stdout != ""
-            - not (fs.strict | default(True))
 
       when:
-        - fs.mountpoint | default(false)
+        - fs.mountpoint is defined
         - fs.mountpoint != ''
+        - not (fs.strict | default(True))
 
-    - name: "set {{ fs.name }} target dataset if no current"
-      set_fact:
-        fs_target_dataset: "{{ fs.parent_dataset }}/{{ fs.name }}"
+    - name: "check {{ fs.parent_dataset }} status"
+      shell: "zfs list -H '{{ fs.parent_dataset }}'"
+      register: t_fs_parent_dataset_status
+      changed_when: no
+      failed_when:
+        - not fs.optional
+        - t_fs_parent_dataset_status.rc != 0
+
+    - block:
+        - name: "check {{ fs.parent_dataset }} status"
+          shell: "zfs list -H '{{ fs.parent_dataset }}' | awk '{print $1}'"
+          register: t_fs_parent_dataset
+          changed_when: no
+
+        - name: "set {{ fs.name }} target dataset from parent"
+          set_fact:
+            fs_target_dataset: "{{ t_fs_parent_dataset.stdout }}/{{ fs.name }}"
+
       when:
+        - t_fs_parent_dataset_status.rc == 0
         - fs_target_dataset is not defined or not fs_target_dataset
-
-    - debug:
-        msg: "{{ fs_target_dataset }}"
 
     - name: "have {{ fs.name }} dataset"
       zfs:
         name: "{{ fs_target_dataset }}"
         state: present
         extra_zfs_properties: "{{ fs_zfs_dataset_properties | combine(fs.properties | default({})) | combine({ 'mountpoint': fs.mountpoint | default('none') }) }}"
+      when:
+        - fs_target_dataset is defined
+        - fs_target_dataset | length > 0
 
   when: fs.type == 'zfs'
-
+  # ignore_errors: "{{ fs.optional | default(false) }}"
 
 - name: "set {{ fs.mountpoint }} permissions"
   file:
@@ -50,5 +67,5 @@
     #recurse: yes
     #follow: no
   when:
-    - fs.mountpoint | default(false)
+    - fs.mountpoint is defined
     - fs.mountpoint != ''

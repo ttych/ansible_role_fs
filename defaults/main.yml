@@ -12,12 +12,15 @@ fs_zfs_dataset_properties:
   relatime: off
 
 fs_default_mode: '0755'
-fs_zfs_default_base_dataset: zdata
+fs_zfs_default_base_dataset: zroot
 
 
-fs_zfs_home_parent_dataset: "{{ fs_zfs_default_base_dataset }}"
-fs_zfs_service_parent_dataset: "{{ fs_zfs_default_base_dataset }}"
-fs_zfs_data_parent_dataset: "{{ fs_zfs_default_base_dataset }}"
+fs_zfs_home_parent_dataset: "{{ fs_zfs_default_base_dataset }}/DATA"
+fs_zfs_home_optional: false
+fs_zfs_service_parent_dataset: "{{ fs_zfs_default_base_dataset }}/APP"
+fs_zfs_service_optional: false
+fs_zfs_data_parent_dataset: "{{ fs_zfs_default_base_dataset }}/DATA"
+fs_zfs_data_optional: false
 
 fs_base:
   - type: zfs
@@ -28,6 +31,7 @@ fs_base:
     owner: root
     group: "{{ root_group }}"
     strict: no
+    optional: "{{ fs_zfs_home_optional }}"
   - type: zfs
     name: service
     parent_dataset: "{{ fs_zfs_service_parent_dataset }}"
@@ -36,6 +40,7 @@ fs_base:
     owner: root
     group: "{{ root_group }}"
     strict: no
+    optional: "{{ fs_zfs_service_optional }}"
   - type: zfs
     name: data
     parent_dataset: "{{ fs_zfs_data_parent_dataset }}"
@@ -44,6 +49,7 @@ fs_base:
     owner: root
     group: "{{ root_group }}"
     strict: no
+    optional: "{{ fs_zfs_data_optional }}"
 
 fs_extra: []
 
